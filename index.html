@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cat Arcade</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: white;
+  text-align: center;
+  background:
+    linear-gradient(#0009, #000b),
+    url("https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=1600")
+    center / cover fixed;
+}
+
+h1 { font-size: 42px; }
+
+.search {
+  margin: 25px auto;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+input {
+  width: 65%;
+  max-width: 500px;
+  padding: 14px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+button, .game-link {
+  background: #8b5cf6;
+  color: white;
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 16px;
+  display: inline-block;
+}
+
+.games {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  max-width: 1000px;
+  margin: 30px auto;
+  padding: 15px;
+}
+
+.card {
+  background: #17172bea;
+  padding: 25px;
+  border-radius: 18px;
+  border: 1px solid #ffffff44;
+}
+
+.card p { color: #ddd; }
+
+#game {
+  background: white;
+  color: black;
+  max-width: 95%;
+  border-radius: 12px;
+  margin: 20px auto;
+  padding: 20px;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(4, 65px);
+  gap: 5px;
+  justify-content: center;
+}
+
+.tile {
+  height: 65px;
+  background: #ddd6ce;
+  color: #222;
+  display: grid;
+  place-items: center;
+  font-weight: bold;
+  font-size: 22px;
+  border-radius: 6px;
+}
+
+footer { padding: 25px; }
+</style>
+</head>
+
+<body>
+
+<h1>🐈 Cat Arcade</h1>
+<p>Search the web or play mini-games!</p>
+
+<form class="search"
+      action="https://duckduckgo.com/"
+      method="get"
+      target="_blank">
+  <input name="q" placeholder="Search anything..." required>
+  <button type="submit">Search</button>
+</form>
+
+<div class="games">
+
+  <div class="card">
+    <h2>🟦 2048</h2>
+    <p>Combine matching numbers to reach 2048!</p>
+    <button onclick="start2048()">Play 2048</button>
+  </div>
+
+  <div class="card">
+    <h2>⭕ Tic-Tac-Toe</h2>
+    <p>Play against a friend.</p>
+    <button onclick="startTTT()">Play Tic-Tac-Toe</button>
+  </div>
+
+  <div class="card">
+    <h2>🌐 More Games</h2>
+    <p>Explore browser games on itch.io.</p>
+    <a class="game-link"
+       href="https://itch.io/games/html5"
+       target="_blank"
+       rel="noopener">
+       Browse Games
+    </a>
+  </div>
+
+</div>
+
+<section id="game" hidden>
+  <h2 id="gameTitle"></h2>
+  <p id="message"></p>
+  <div id="board"></div>
+  <div id="ttt"></div>
+  <button onclick="start2048()">Restart 2048</button>
+</section>
+
+<script>
+const game = document.getElementById("game");
+const board = document.getElementById("board");
+const ttt = document.getElementById("ttt");
+const title = document.getElementById("gameTitle");
+const message = document.getElementById("message");
+
+let tiles = [];
+let cells = [];
+
+function showGame(name) {
+  game.hidden = false;
+  title.textContent = name;
+  board.innerHTML = "";
+  ttt.innerHTML = "";
+  board.style.display = "grid";
+}
+
+function start2048() {
+  showGame("🟦 2048");
+  ttt.style.display = "none";
+  board.style.display = "grid";
+  tiles = Array(16).fill(0);
+  addTile();
+  addTile();
+  draw2048();
+  message.textContent =
+    "Use your arrow keys to move the tiles.";
+}
+
+function addTile() {
+  const empty = tiles
+    .map((v, i) => v === 0 ? i : -1)
+    .filter(i => i >= 0);
+
+  if (empty.length) {
+    const i = empty[Math.floor(Math.random() * empty.length)];
+    tiles[i] = Math.random() < 0.9 ? 2 : 4;
+  }
+}
+
+function draw2048() {
+  board.innerHTML = "";
+
+  tiles.forEach(value => {
+    const cell = document.createElement("div");
+    cell.className = "tile";
+    cell.textContent = value || "";
+    board.appendChild(cell);
+  });
+}
+
+function move(dx, dy) {
+  if (game.hidden || title.textContent !== "🟦 2048")
+    return;
+
+  const old = tiles.slice();
+
+  for (let line = 0; line < 4; line++) {
+    let ids = [];
+
+    for (let j = 0; j < 4; j++) {
+      if (dx !== 0) {
+        ids.push(line * 4 + (dx < 0 ? j : 3 - j));
+      } else {
+        ids.push((dy < 0 ? j : 3 - j) * 4 + line);
+      }
+    }
+
+    let values = ids.map(i => tiles[i]).filter(v => v);
+
+    for (let j = 0; j < values.length - 1; j++) {
+      if (values[j] === values[j + 1]) {
+        values[j] *= 2;
+        values.splice(j + 1, 1);
+      }
+    }
+
+    while (values.length < 4) values.push(0);
+
+    ids.forEach((id, j) => {
+      tiles[id] = values[j];
+    });
+  }
+
+  if (tiles.some((v, i) => v !== old[i])) {
+    addTile();
+    draw2048();
+  }
+}
+
+document.addEventListener("keydown", e => {
+  const moves = {
+    ArrowLeft: [-1, 0],
+    ArrowRight: [1, 0],
+    ArrowUp: [0, -1],
+    ArrowDown: [0, 1]
+  };
+
+  if (moves[e.key] && !game.hidden) {
+    e.preventDefault();
+    move(...moves[e.key]);
+  }
+});
+
+function startTTT() {
+  showGame("⭕ Tic-Tac-Toe");
+  board.style.display = "none";
+  ttt.style.display = "grid";
+  ttt.style.gridTemplateColumns = "repeat(3, 70px)";
+  ttt.style.gap = "5px";
+  ttt.style.justifyContent = "center";
+
+  cells = Array(9).fill("");
+  drawTTT();
+  message.textContent = "X goes first!";
+}
+
+function drawTTT() {
+  ttt.innerHTML = "";
+
+  cells.forEach((value, i) => {
+    const button = document.createElement("button");
+    button.textContent = value || " ";
+    button.style.height = "65px";
+
+    button.onclick = () => {
+      if (cells[i] || winner()) return;
+
+      cells[i] = "X";
+      if (!winner() && cells.includes("")) {
+        let empty = cells
+          .map((v, j) => v === "" ? j : -1)
+          .filter(j => j >= 0);
+
+        cells[empty[Math.floor(Math.random() * empty.length)]] = "O";
+      }
+
+      drawTTT();
+
+      if (winner()) message.textContent = winner() + " wins!";
+      else if (!cells.includes("")) message.textContent = "It's a draw!";
+    };
+
+    ttt.appendChild(button);
+  });
+}
+
+function winner() {
+  const lines = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  for (const [a,b,c] of lines) {
+    if (cells[a] &&
+        cells[a] === cells[b] &&
+        cells[a] === cells[c]) {
+      return cells[a];
+    }
+  }
+
+  return null;
+}
+</script>
+
+<footer>🐈 Cat Arcade</footer>
+
+</body>
+</html>
